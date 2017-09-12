@@ -1,13 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
-	"path"
-	"strings"
 )
 
 var (
@@ -16,7 +12,8 @@ var (
 	goTestFlags         = flag.String("go-test-flags", "", "Send custom flags to go test as parameters")
 	goTestShort         = flag.Bool("go-test-short", false, "Enable -short mode for go test")
 	gometalinterConfig  = flag.String("gometalinter-config", "", "Path to configuration file for gometalinter")
-	gometalinterFlags   = flag.String("gometalinter-flags", "", "Send custom flags to gometalinter as parameters")
+	gometalinterFlags   = flag.String("gometalinter-flags", "", "Send custom flags to gometalinter")
+	gometalinterPath    = flag.String("gometalinter-path", ".", "Path for gometalinter to lint. Set it to ./... for recursion")
 	ignoreErrors        = flag.Bool("ignore-errors", false, "Continue with the next check on errors")
 	packageName         = flag.String("package", "", "Package name to test")
 	verbose             = flag.Bool("verbose", false, "Enable verbose output")
@@ -58,7 +55,7 @@ func runGoTest() {
 
 	args = append(args, *packageName)
 
-	runCommand("go", args)
+	runCommand("go", args, *ignoreErrors, *verbose)
 }
 
 // runGometalinter is running the gometalinter checks.
@@ -75,55 +72,7 @@ func runGometalinter() {
 		args = append(args, fmt.Sprintf("--config=%s", *gometalinterConfig))
 	}
 
-	args = append(args, path.Join(os.Getenv("GOPATH"), "src", *packageName))
+	args = append(args, *gometalinterPath)
 
-	runCommand("gometalinter", args)
-}
-
-func runCommand(command string, args []string) {
-	cmd := exec.Command(command, args...)
-	if *verbose {
-		fmt.Printf("Running command: %s %s\n", command, strings.Join(args, " "))
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Could not open stdout pipe", err)
-		os.Exit(1)
-	}
-
-	stdoutScanner := bufio.NewScanner(stdout)
-	go func() {
-		for stdoutScanner.Scan() {
-			fmt.Println(stdoutScanner.Text())
-		}
-	}()
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Could not open stderr pipe", err)
-		os.Exit(1)
-	}
-
-	stderrScanner := bufio.NewScanner(stderr)
-	go func() {
-		for stderrScanner.Scan() {
-			fmt.Println(stderrScanner.Text())
-		}
-	}()
-
-	err = cmd.Start()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error running command", err)
-		os.Exit(1)
-	}
-
-	err = cmd.Wait()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s exited with errors: %s\n", command, err.Error())
-
-		if !*ignoreErrors {
-			os.Exit(1)
-		}
-	}
+	runCommand("gometalinter", args, *ignoreErrors, *verbose)
 }

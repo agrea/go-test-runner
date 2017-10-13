@@ -83,7 +83,7 @@ func runGometalinter() {
 
 	args = append(args, *gometalinterPath)
 
-	runCommand("gometalinter", args, *ignoreErrors, *verbose)
+	runCommand("gometalinter.v1", args, *ignoreErrors, *verbose)
 }
 
 // runCommand is running a command and printing the stderr and stdout to stdout.

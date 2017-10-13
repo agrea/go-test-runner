@@ -1,6 +1,6 @@
 .DEFAULT_TARGET := build-dev
 IMAGE_NAME := agrea/go-test-runner
-VERSION := "0.2"
+VERSION := "0.3"
 
 .PHONY: build-dev
 build-dev:

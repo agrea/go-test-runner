@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 var (
@@ -22,6 +25,8 @@ var (
 func main() {
 	flag.Parse()
 
+	bogus(nil)
+
 	if *packageName == "" {
 		fmt.Println("Missing required parameter -package")
 		flag.Usage()
@@ -35,6 +40,10 @@ func main() {
 	if !*disableGoTest {
 		runGoTest()
 	}
+}
+
+func bogus(a *int) {
+	fmt.Printf("%d\n", *a)
 }
 
 // runGoTest is executing go test with the given parameters.
@@ -75,4 +84,53 @@ func runGometalinter() {
 	args = append(args, *gometalinterPath)
 
 	runCommand("gometalinter", args, *ignoreErrors, *verbose)
+}
+
+// runCommand is running a command and printing the stderr and stdout to stdout.
+func runCommand(command string, args []string, ignoreErrors, verbose bool) {
+	cmd := exec.Command(command, args...)
+	if verbose {
+		fmt.Printf("Running command: %s %s\n", command, strings.Join(args, " "))
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Could not open stdout pipe", err)
+		os.Exit(1)
+	}
+
+	stdoutScanner := bufio.NewScanner(stdout)
+	go func() {
+		for stdoutScanner.Scan() {
+			fmt.Println(stdoutScanner.Text())
+		}
+	}()
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Could not open stderr pipe", err)
+		os.Exit(1)
+	}
+
+	stderrScanner := bufio.NewScanner(stderr)
+	go func() {
+		for stderrScanner.Scan() {
+			fmt.Println(stderrScanner.Text())
+		}
+	}()
+
+	err = cmd.Start()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error running command", err)
+		os.Exit(1)
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s exited with errors: %s\n", command, err.Error())
+
+		if !ignoreErrors {
+			os.Exit(1)
+		}
+	}
 }

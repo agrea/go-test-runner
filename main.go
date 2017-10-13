@@ -19,13 +19,12 @@ var (
 	gometalinterPath    = flag.String("gometalinter-path", ".", "Path for gometalinter to lint. Set it to ./... for recursion")
 	ignoreErrors        = flag.Bool("ignore-errors", false, "Continue with the next check on errors")
 	packageName         = flag.String("package", "", "Package name to test")
+	recursive           = flag.Bool("recursive", false, "Run tests recursivly")
 	verbose             = flag.Bool("verbose", false, "Enable verbose output")
 )
 
 func main() {
 	flag.Parse()
-
-	bogus(nil)
 
 	if *packageName == "" {
 		fmt.Println("Missing required parameter -package")
@@ -40,10 +39,6 @@ func main() {
 	if !*disableGoTest {
 		runGoTest()
 	}
-}
-
-func bogus(a *int) {
-	fmt.Printf("%d\n", *a)
 }
 
 // runGoTest is executing go test with the given parameters.
@@ -62,7 +57,12 @@ func runGoTest() {
 		args = append(args, "-short")
 	}
 
-	args = append(args, *packageName)
+	pkg := *packageName
+	if *recursive {
+		pkg = fmt.Sprintf("%s/...", pkg)
+	}
+
+	args = append(args, pkg)
 
 	runCommand("go", args, *ignoreErrors, *verbose)
 }

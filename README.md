@@ -29,7 +29,7 @@ parameters to `go-test-runner` can be appended to the command.
 
 ### Command line instructions
 
-    Usage of go-test-runner:
+    Usage of ./go-test-runner:
       -disable-go-test
             Disable go test execution
       -disable-gometalinter
@@ -41,11 +41,15 @@ parameters to `go-test-runner` can be appended to the command.
       -gometalinter-config string
             Path to configuration file for gometalinter
       -gometalinter-flags string
-            Send custom flags to gometalinter as parameters
+            Send custom flags to gometalinter
+      -gometalinter-path string
+            Path for gometalinter to lint. Set it to ./... for recursion (default ".")
       -ignore-errors
             Continue with the next check on errors
       -package string
             Package name to test
+      -recursive
+            Run tests recursivly
       -verbose
             Enable verbose output
 
@@ -58,7 +62,7 @@ Gometalinter configuration file for `go-test-runner` to use with the
     {
       "Enable": [
         "deadcode",
-        "govet",
+        "vet",
         "gosimple",
         "goimports",
         "gofmt",
